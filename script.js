@@ -69,6 +69,7 @@ const byId=id=>STAFF.find(s=>s.id===id);
 const rand=(a,b)=>a+Math.random()*(b-a), rint=(a,b)=>Math.floor(rand(a,b+1));
 const now=()=>new Date().toLocaleTimeString('en-IN',{hour12:false});
 const esc=t=>t.replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const svgIcon=(name,cls='')=>`<svg class="ui-icon${cls?' '+cls:''}" aria-hidden="true"><use href="#i-${name}"></use></svg>`;
 const initials=n=>n.replace(/^(Dr\.|Sister|Nurse|Tech|Ph\.|Sec\.|Spt\.)\s*/,'').split(' ').map(w=>w[0]).slice(0,2).join('').toUpperCase();
 const zonesOf=f=>ZONES.filter(z=>z.floor===f);
 const zoneById=id=>ZONES.find(z=>z.id===id);
@@ -78,13 +79,13 @@ const fmtHM=min=>{min=Math.round(min);return Math.floor(min/60)+'h '+String(min%
 const fmtDur=ms=>{const t=Math.round(ms/1000);return t>=60?Math.floor(t/60)+'m '+String(t%60).padStart(2,'0')+'s':t+'s';};
 const zoneAgg={};
 const ASSETS=[
-  {id:'a1',name:'Wheelchair WC-01',icon:'🦽',floor:'G',zone:'g-rec',status:'available'},
-  {id:'a2',name:'Wheelchair WC-02',icon:'🦽',floor:'1',zone:'f1-wa',status:'in use'},
-  {id:'a3',name:'Infusion Pump IP-114',icon:'💉',floor:'1',zone:'f1-icu',status:'in use'},
-  {id:'a4',name:'Defibrillator DF-3',icon:'⚡',floor:'G',zone:'g-er',status:'available'},
-  {id:'a5',name:'ECG Cart EC-2',icon:'📈',floor:'2',zone:'f2-rec',status:'available'},
-  {id:'a6',name:'Ventilator VT-7',icon:'🫁',floor:'2',zone:'f2-ot1',status:'maintenance'},
-  {id:'a7',name:'Patient Bed B-12',icon:'🛏',floor:'1',zone:'f1-wb',status:'in use'}
+  {id:'a1',name:'Wheelchair WC-01',icon:'wheelchair',floor:'G',zone:'g-rec',status:'available'},
+  {id:'a2',name:'Wheelchair WC-02',icon:'wheelchair',floor:'1',zone:'f1-wa',status:'in use'},
+  {id:'a3',name:'Infusion Pump IP-114',icon:'syringe',floor:'1',zone:'f1-icu',status:'in use'},
+  {id:'a4',name:'Defibrillator DF-3',icon:'zap',floor:'G',zone:'g-er',status:'available'},
+  {id:'a5',name:'ECG Cart EC-2',icon:'activity',floor:'2',zone:'f2-rec',status:'available'},
+  {id:'a6',name:'Ventilator VT-7',icon:'lungs',floor:'2',zone:'f2-ot1',status:'maintenance'},
+  {id:'a7',name:'Patient Bed B-12',icon:'bed',floor:'1',zone:'f1-wb',status:'in use'}
 ];
 function toast(msg,cls=''){const t=document.createElement('div');t.className='toast '+cls;t.textContent=msg;
   $('#toasts').appendChild(t);setTimeout(()=>{t.style.opacity=0;t.style.transition='opacity .3s';setTimeout(()=>t.remove(),320);},2600);}
@@ -115,7 +116,7 @@ function pickDest(s){
     const lp=ptInZone(liftOf(nf));s.x=lp.x;s.y=lp.y;
     const t=zonesOf(nf).filter(z=>!z.cls);const z=t[rint(0,t.length-1)];
     s.zone=z.id;s.dest=ptInZone(z);
-    addFeed('🛗',`<b>${esc(s.name)}</b> moved to ${floorLabel(nf)} via lift`,'','move');
+    addFeed('lift',`<b>${esc(s.name)}</b> moved to ${floorLabel(nf)} via lift`,'','move');
     return;
   }
   const r=Math.random();
@@ -139,7 +140,7 @@ function tick(){
     if (z&&z.restricted&&!z.allowed.includes(s.role)){
       if (s.inRestricted!==z.id){
         s.inRestricted=z.id;
-        raiseAlert('⛔','geofence',`Geofence breach — <b>${esc(s.name)}</b> (${ROLES[s.role].label}) entered <b>${z.name}</b>, ${floorLabel(s.floor)}`,s);
+        raiseAlert('alert','geofence',`Geofence breach — <b>${esc(s.name)}</b> (${ROLES[s.role].label}) entered <b>${z.name}</b>, ${floorLabel(s.floor)}`,s);
         flashZone(z.id);
       }
     } else if (s.inRestricted&&(!z||z.id!==s.inRestricted)) s.inRestricted=null;
@@ -153,7 +154,7 @@ function tick(){
         const key=s.curZoneName+' · '+floorLabel(s.curFloorAt);
         if (s.curZoneName!=='Corridor') zoneAgg[key]=(zoneAgg[key]||0)+dur;
         const nz=z?z.name:'Corridor';
-        addFeed('🚶',`<b>${esc(s.name)}</b> · ${esc(s.curZoneName)} → ${esc(nz)} <span style="color:var(--faint)">(${fmtDur(dur)} in ${esc(s.curZoneName)})</span>`,'','move');
+        addFeed('walk',`<b>${esc(s.name)}</b> · ${esc(s.curZoneName)} → ${esc(nz)} <span style="color:var(--faint)">(${fmtDur(dur)} in ${esc(s.curZoneName)})</span>`,'','move');
       }
       s.curZone=zid;s.curZoneName=z?z.name:'Corridor';s.curFloorAt=s.floor;s.curSince=Date.now();
     }
@@ -163,7 +164,7 @@ function tick(){
       if (s.status==='offduty') return;
       s.battery=Math.max(2,s.battery-(Math.random()<0.5?1:0));
       if (s.battery===14&&!s.lowWarned){s.lowWarned=true;
-        raiseAlert('🔋','battery',`Low badge battery (14%) — <b>${esc(s.name)}</b>. Tracker may go offline.`,s);}
+        raiseAlert('battery','battery',`Low badge battery (14%) — <b>${esc(s.name)}</b>. Tracker may go offline.`,s);}
     });
     if (state.view==='employees') renderEmployees();
   }
@@ -185,7 +186,7 @@ function buildZones(){
     d.id='zone-'+z.id;
     d.style.cssText=`left:${z.x}%;top:${z.y}%;width:${z.w}%;height:${z.h}%`;
     const code=(z.floor==='G'?'G':'F'+z.floor)+'·'+String(i+1).padStart(2,'0');
-    d.innerHTML=`<span class="zl">${z.name}${z.restricted?' 🔒':''}</span><span class="zr">${code}</span><span class="zc" data-zc="${z.id}"></span>`;
+    d.innerHTML=`<span class="zl">${z.name}${z.restricted?svgIcon('lock','zone-lock'):''}</span><span class="zr">${code}</span><span class="zc" data-zc="${z.id}"></span>`;
     mapEl().appendChild(d);
   });
 }
@@ -194,7 +195,7 @@ function buildAssets(){
   ASSETS.forEach(a=>{
     const p=ptInZone(zoneById(a.zone));a.x=p.x;a.y=p.y;a.moved=now();
     const d=document.createElement('div');d.className='adot';
-    d.innerHTML=`<span class="tag">${a.icon} ${a.name}</span>`;
+    d.innerHTML=`<span class="tag">${svgIcon(a.icon)} ${a.name}</span>`;
     mapEl().appendChild(d);adots[a.id]=d;
   });
 }
@@ -253,10 +254,10 @@ function openPopup(s){
     <div class="row"><span>On site today</span><b>${fmtHM(s.onMin)}</b></div>
     <div class="row"><span>Battery</span><b>${s.battery}%</b></div>
     <div class="actions" style="display:grid;grid-template-columns:1fr 1fr;gap:6px">
-      <button class="btn sm primary" onclick="msgStaff('${s.id}')">✉ Page</button>
-      <button class="btn sm" onclick="locateStaff('${s.id}');closePopup()">◎ Track</button>
-      <button class="btn sm" onclick="openHistory('${s.id}');closePopup()">🕘 History</button>
-      <button class="btn sm" onclick="closePopup()">✕</button>
+      <button class="btn sm primary" onclick="msgStaff('${s.id}')">${svgIcon('mail')} Page</button>
+      <button class="btn sm" onclick="locateStaff('${s.id}');closePopup()">${svgIcon('locate')} Track</button>
+      <button class="btn sm" onclick="openHistory('${s.id}');closePopup()">${svgIcon('history')} History</button>
+      <button class="btn sm" onclick="closePopup()">${svgIcon('x')}</button>
     </div>`;
   p.style.left=Math.min(Math.max(s.x,2),70)+'%';p.style.top=Math.max(s.y-4,2)+'%';
   p.classList.add('open');
@@ -290,9 +291,9 @@ function buildFilters(){
   $$('.fchip').forEach(c=>c.onclick=()=>{state.roleFilter=c.dataset.f;buildFilters();renderEmployees();});
 }
 function statusBadge(s){
-  return s.status==='onduty'?'<span class="badge green">● On duty</span>'
-    : s.status==='break'?'<span class="badge amber">◐ On break</span>'
-    : '<span class="badge gray">○ Off duty</span>';
+  return s.status==='onduty'?'<span class="badge green"><i class="status-dot"></i> On duty</span>'
+    : s.status==='break'?'<span class="badge amber"><i class="status-dot"></i> On break</span>'
+    : '<span class="badge gray"><i class="status-dot"></i> Off duty</span>';
 }
 function renderEmployees(){
   const q=state.search.toLowerCase();
@@ -310,9 +311,9 @@ function renderEmployees(){
         <td class="mono">${s.since}</td>
         <td class="mono" style="color:${s.battery<=15?'var(--red)':'inherit'}">${s.battery}%</td>
         <td class="mono" style="font-size:11px">${s.phone}</td>
-        <td style="white-space:nowrap"><button class="btn sm" onclick="locateStaff('${s.id}')">◎ Track</button>
-            <button class="btn sm" onclick="msgStaff('${s.id}')">✉ Page</button>
-            <button class="btn sm" onclick="openHistory('${s.id}')" title="Location history">🕘</button></td>
+        <td style="white-space:nowrap"><button class="btn sm" onclick="locateStaff('${s.id}')">${svgIcon('locate')} Track</button>
+            <button class="btn sm" onclick="msgStaff('${s.id}')">${svgIcon('mail')} Page</button>
+            <button class="btn sm" onclick="openHistory('${s.id}')" title="Location history">${svgIcon('history')}</button></td>
       </tr>`;}).join('');
 }
 
@@ -381,7 +382,7 @@ function sendBroadcast(msg,ids,code,opts={}){
   state.broadcasts.unshift(b);if(state.broadcasts.length>8)state.broadcasts.pop();
   b.recipients.forEach(r=>scheduleDelivery(b,r,opts));
   renderBroadcasts();
-  addFeed('📣',`Page <b>#${b.id}</b> out to <b>${b.recipients.length}</b> staff: “${esc(b.msg.slice(0,60))}${b.msg.length>60?'…':''}”`,code!=='custom'?'crit':'','page');
+  addFeed('megaphone',`Page <b>#${b.id}</b> out to <b>${b.recipients.length}</b> staff: “${esc(b.msg.slice(0,60))}${b.msg.length>60?'…':''}”`,code!=='custom'?'crit':'','page');
   toast(`Page out to ${b.recipients.length} pager(s)`,'ok');
   return b;
 }
@@ -395,7 +396,7 @@ function scheduleDelivery(b,r,opts={}){
     setTimeout(()=>{
       r.status='acked';r.ackMs=t;state.ackTimes.push(t);
       const d=dots[s.id];if(d){d.style.boxShadow='0 0 0 4px rgba(22,163,74,.35)';setTimeout(()=>d.style.boxShadow='',2200);}
-      addFeed('✅',`<b>${esc(s.name)}</b> acknowledged page #${b.id} <span style="color:var(--faint)">(${(t/1000).toFixed(1)}s)</span>`,'','page');
+      addFeed('check',`<b>${esc(s.name)}</b> acknowledged page #${b.id} <span style="color:var(--faint)">(${(t/1000).toFixed(1)}s)</span>`,'','page');
       renderBroadcasts();updateKPIs();
     },t);
   }
@@ -405,7 +406,7 @@ function repage(bid){
   const b=state.broadcasts.find(x=>x.id===bid);if(!b)return;
   const missed=b.recipients.filter(r=>r.status==='noack');
   missed.forEach(r=>{r.status='sent';scheduleDelivery(b,r,{repage:true});});
-  addFeed('🔁',`Re-paged <b>${missed.length}</b> unacknowledged staff on page #${bid}`,'','page');
+  addFeed('repeat',`Re-paged <b>${missed.length}</b> unacknowledged staff on page #${bid}`,'','page');
   renderBroadcasts();
 }
 function renderBroadcasts(){
@@ -420,7 +421,7 @@ function renderBroadcasts(){
       <div class="bc-recips">${b.recipients.map(r=>{const s=byId(r.id);
         const lbl={sent:'sending…',delivered:'delivered',acked:'ACK '+(r.ackMs/1000).toFixed(1)+'s',noack:'NO ACK'}[r.status];
         return `<span class="rpill ${r.status}" title="${esc(s.name)}"><i></i>${esc(s.name.split(' ').pop())} · ${lbl}</span>`;}).join('')}</div>
-      ${noack?`<div class="bc-foot"><button class="btn sm ghost-danger" onclick="repage(${b.id})">🔁 Re-page ${noack} unacknowledged</button></div>`:''}
+      ${noack?`<div class="bc-foot"><button class="btn sm ghost-danger" onclick="repage(${b.id})">${svgIcon('repeat')} Re-page ${noack} unacknowledged</button></div>`:''}
     </div>`;}).join('')
   :'<div style="color:var(--faint);font-size:12px">Nothing paged yet. Pick a code or write your own, tick who gets it, hit send — then watch the ACKs land here one by one.</div>';
 }
@@ -438,7 +439,7 @@ function resolveAlert(id){
   const a=state.alerts.find(x=>x.id===id);if(!a||a.resolved)return;
   a.resolved=true;
   if (a.type==='sos'&&a.staffId) byId(a.staffId).sosActive=false;
-  addFeed('✔',`Alert #${id} marked resolved by ${state.user?esc(state.user.name):'control room'}`);
+  addFeed('check',`Alert #${id} marked resolved by ${state.user?esc(state.user.name):'control room'}`);
   renderAlerts();updateKPIs();
 }
 function renderAlerts(){
@@ -446,12 +447,12 @@ function renderAlerts(){
   $('#alertCountSub').textContent=activeAlerts()+' active · '+list.filter(a=>a.resolved).length+' resolved';
   $('#alertList').innerHTML=list.length?list.map(a=>`
     <div class="alert-item${a.resolved?' resolved':' crit'}">
-      <div class="ico">${a.icon}</div>
+      <div class="ico">${svgIcon(a.icon)}</div>
       <div style="flex:1"><div class="at">${a.html}</div><div class="ft">#${a.id} · ${a.at}</div>
         <div class="fa">
-          ${a.staffId&&!a.resolved?`<button class="btn sm" onclick="locateStaff('${a.staffId}')">◎ Locate</button>`:''}
-          ${a.type==='sos'&&!a.resolved?`<button class="btn sm danger" onclick="dispatchTo('${a.staffId}')">🚑 Dispatch nearest</button>`:''}
-          ${!a.resolved?`<button class="btn sm" onclick="resolveAlert(${a.id})">✔ Resolve</button>`:'<span class="badge green">Resolved</span>'}
+          ${a.staffId&&!a.resolved?`<button class="btn sm" onclick="locateStaff('${a.staffId}')">${svgIcon('locate')} Locate</button>`:''}
+          ${a.type==='sos'&&!a.resolved?`<button class="btn sm danger" onclick="dispatchTo('${a.staffId}')">${svgIcon('ambulance')} Dispatch nearest</button>`:''}
+          ${!a.resolved?`<button class="btn sm" onclick="resolveAlert(${a.id})">${svgIcon('check')} Resolve</button>`:'<span class="badge green">Resolved</span>'}
         </div></div>
     </div>`).join('')
   :'<div style="color:var(--faint);font-size:12px">No alerts. SOS presses, geofence breaches and low batteries will appear here the moment they happen.</div>';
@@ -467,7 +468,7 @@ function triggerSOS(s){
   const z=zoneAt(s.floor,s.x,s.y);
   flashZone((z||liftOf(s.floor)).id);
   if (s.floor===state.floor) sweepAt(s.x,s.y);
-  raiseAlert('🆘','sos',`<b>SOS</b> raised by <b>${esc(s.name)}</b> — ${z?z.name:'Corridor'}, ${floorLabel(s.floor)}`,s);
+  raiseAlert('alert','sos',`<b>SOS</b> raised by <b>${esc(s.name)}</b> — ${z?z.name:'Corridor'}, ${floorLabel(s.floor)}`,s);
   navTo('alerts');
 }
 function dispatchTo(id){
@@ -494,7 +495,7 @@ function buildLogFilters(){
 function renderFeed(){
   const q=logState.q.toLowerCase();
   const list=FEEDLOG.filter(e=>(logState.cat==='all'||e.cat===logState.cat)&&(!q||e.html.toLowerCase().includes(q))).slice(0,150);
-  $('#feed').innerHTML=list.length?list.map(e=>`<div class="fitem ${e.cls}"><div class="ico">${e.icon}</div><div style="flex:1">${e.html}<div class="ft">${e.at} · ${e.cat}</div></div></div>`).join('')
+  $('#feed').innerHTML=list.length?list.map(e=>`<div class="fitem ${e.cls}"><div class="ico">${svgIcon(e.icon)}</div><div style="flex:1">${e.html}<div class="ft">${e.at} · ${e.cat}</div></div></div>`).join('')
   :'<div style="color:var(--faint);font-size:12px;padding:8px 0">Nothing here yet for this filter — it fills up as people move.</div>';
 }
 /* per-employee location history with time spent */
@@ -520,7 +521,7 @@ function renderPermissions(){
   const rz=ZONES.filter(z=>z.restricted);
   $('#zonePerms').innerHTML=rz.map(z=>`
     <div class="pz-row">
-      <div class="pz-name">${z.name} 🔒<span>${floorLabel(z.floor)}</span></div>
+      <div class="pz-name">${z.name} ${svgIcon('lock','zone-lock')}<span>${floorLabel(z.floor)}</span></div>
       <div style="display:flex;gap:6px;flex-wrap:wrap">${Object.entries(ROLES).map(([k,v])=>
         `<button class="ptoggle${z.allowed.includes(k)?' on':''}" onclick="togglePerm('${z.id}','${k}')">${v.label}s</button>`).join('')}</div>
     </div>`).join('');
@@ -535,8 +536,8 @@ function renderPermissions(){
 function togglePerm(zid,role){
   const z=zoneById(zid);
   const i=z.allowed.indexOf(role);
-  if (i>=0){z.allowed.splice(i,1);addFeed('🔐',`<b>${ROLES[role].label}s</b> access to <b>${z.name}</b> revoked by ${esc(state.user.name)}`);}
-  else{z.allowed.push(role);addFeed('🔐',`<b>${ROLES[role].label}s</b> granted access to <b>${z.name}</b> by ${esc(state.user.name)}`);}
+  if (i>=0){z.allowed.splice(i,1);addFeed('lock',`<b>${ROLES[role].label}s</b> access to <b>${z.name}</b> revoked by ${esc(state.user.name)}`);}
+  else{z.allowed.push(role);addFeed('lock',`<b>${ROLES[role].label}s</b> granted access to <b>${z.name}</b> by ${esc(state.user.name)}`);}
   renderPermissions();
   toast(`${z.name}: ${ROLES[role].label}s ${i>=0?'blocked':'allowed'}`,'ok');
 }
@@ -559,7 +560,7 @@ function renderReports(){
     ${statBox('On duty',STAFF.filter(s=>s.status==='onduty').length)}${statBox('On break',STAFF.filter(s=>s.status==='break').length)}${statBox('Alerts today',state.alerts.length)}
   </div>`;
   $('#assetTable').innerHTML=`<tr><th>Asset</th><th>Location</th><th>Status</th><th>Last moved</th></tr>`+
-    ASSETS.map(a=>`<tr><td style="font-weight:600;white-space:nowrap">${a.icon} ${a.name}</td>
+    ASSETS.map(a=>`<tr><td style="font-weight:600;white-space:nowrap"><span class="asset-label">${svgIcon(a.icon)} ${a.name}</span></td>
       <td class="mono" style="font-size:11.5px">${zoneById(a.zone).name}, ${floorLabel(a.floor)}</td>
       <td><span class="badge ${a.status==='available'?'green':a.status==='in use'?'blue':'amber'}">${a.status}</span></td>
       <td class="mono" style="font-size:11px">${a.moved}</td></tr>`).join('');
@@ -612,7 +613,7 @@ function tryLogin(){
   $('#navPerm').style.display=acc.role==='Admin'?'flex':'none';
   $('#loginView').style.display='none';$('#appView').classList.add('on');
   startApp();
-  addFeed('🔓',`<b>${esc(acc.name)}</b> (${acc.role}) signed in to the control room`);
+  addFeed('unlock',`<b>${esc(acc.name)}</b> (${acc.role}) signed in to the control room`);
   toast(`Welcome back, ${acc.name.split(' ')[0]}`,'ok');
 }
 function startApp(){
@@ -621,14 +622,14 @@ function startApp(){
   buildFloorTabs();buildLegend();buildZones();buildDots();buildAssets();buildFilters();buildLogFilters();
   renderEmployees();renderRecipients();renderBroadcasts();renderAlerts();renderTime();bindComposer();
   updateKPIs();tickClock();setInterval(tickClock,1000);setInterval(tick,60);
-  addFeed('🟢','Control room is up. <b>'+STAFF.filter(s=>s.status!=='offduty').length+'</b> badges reporting in across 3 floors. All quiet so far.');
+  addFeed('status','Control room is up. <b>'+STAFF.filter(s=>s.status!=='offduty').length+'</b> badges reporting in across 3 floors. All quiet so far.');
   /* ambient status changes */
   setInterval(()=>{
     if (Math.random()<0.30){
       const pool=STAFF.filter(s=>s.status!=='offduty');
       const s=pool[rint(0,pool.length-1)];
-      if (s.status==='onduty'){s.status='break';addFeed('☕',`<b>${esc(s.name)}</b> started a break`);}
-      else{s.status='onduty';addFeed('🟢',`<b>${esc(s.name)}</b> is back on duty`);}
+      if (s.status==='onduty'){s.status='break';addFeed('coffee',`<b>${esc(s.name)}</b> started a break`);}
+      else{s.status='onduty';addFeed('status',`<b>${esc(s.name)}</b> is back on duty`);}
       updateKPIs();if(state.view==='employees')renderEmployees();
     }
   },25000);
@@ -652,7 +653,7 @@ $('#loginPass').addEventListener('keydown',e=>{if(e.key==='Enter')tryLogin();});
 $('#loginUser').addEventListener('keydown',e=>{if(e.key==='Enter')tryLogin();});
 $$('.cred').forEach(c=>c.onclick=()=>{$('#loginUser').value=c.dataset.u;$('#loginPass').value=c.dataset.p;$('#loginErr').textContent='';});
 $('#btnLogout').onclick=()=>{
-  addFeed('🔒',`<b>${esc(state.user.name)}</b> signed out`);
+  addFeed('lock',`<b>${esc(state.user.name)}</b> signed out`);
   state.user=null;$('#appView').classList.remove('on');$('#loginView').style.display='grid';
   $('#loginPass').value='';$('#loginErr').textContent='';
 };
@@ -662,7 +663,7 @@ $('#scrim').onclick=()=>{$('#sidebar').classList.remove('open');$('#scrim').clas
 $('#empSearch').oninput=e=>{state.search=e.target.value;renderEmployees();};
 $('#logSearch').oninput=e=>{logState.q=e.target.value;renderFeed();};
 $('#btnAssets').onclick=()=>{state.showAssets=!state.showAssets;
-  $('#btnAssets').textContent='🦽 Assets: '+(state.showAssets?'on':'off');updateAssets();};
+  $('#btnAssets').innerHTML=`${svgIcon('wheelchair')} Assets: ${state.showAssets?'on':'off'}`;updateAssets();};
 $('#shiftNote').onclick=e=>e.currentTarget.remove();
 $('#histClose').onclick=()=>$('#histModal').classList.remove('on');
 $('#histModal').addEventListener('click',e=>{if(e.target.id==='histModal')e.target.classList.remove('on');});
@@ -674,6 +675,6 @@ $('#btnDrill').onclick=()=>{
   const spot={floor:'1',x:icu.x+icu.w/2,y:icu.y+icu.h/2};
   setFloor('1');flashZone('f1-icu');sweepAt(spot.x,spot.y);
   const team=nearestResponders(spot,4,['doctor','nurse']);
-  raiseAlert('🚨','drill',`<b>CODE BLUE drill</b> at <b>ICU, Floor 1</b>. Nearest team auto-paged: ${team.map(t=>'<b>'+esc(t.name.split(' ').slice(0,2).join(' '))+'</b>').join(', ')}`);
+  raiseAlert('alert','drill',`<b>CODE BLUE drill</b> at <b>ICU, Floor 1</b>. Nearest team auto-paged: ${team.map(t=>'<b>'+esc(t.name.split(' ').slice(0,2).join(' '))+'</b>').join(', ')}`);
   sendBroadcast('CODE BLUE — ICU Floor 1, Bed 4. Cardiac arrest. Nearest team respond immediately.',team.map(t=>t.id),'blue');
 };
