@@ -1,0 +1,216 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MedTrack — Hospital Staff Platform | BrainADZ Live</title>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@400;500;600&family=Caveat:wght@500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+<!-- ═══════════ LOGIN ═══════════ -->
+<div class="login" id="loginView">
+  <div class="login-card" id="loginCard">
+    <div class="login-logo">
+      <div class="lmark">✚</div>
+      <div>
+        <div class="lname">MedTrack <span>OS</span></div>
+        <div class="lsub">Dwarka General Hospital · staff platform</div>
+      </div>
+    </div>
+    <h2>Sign in to the control room</h2>
+    <p class="hint">Authorised hospital staff only. Sessions are logged.</p>
+    <div class="field"><label>Username</label><input id="loginUser" placeholder="e.g. admin" autocomplete="off"></div>
+    <div class="field"><label>Password</label><input id="loginPass" type="password" placeholder="••••••••"></div>
+    <button class="btn primary" id="btnLogin">Sign in →</button>
+    <div class="login-err" id="loginErr"></div>
+    <div class="demo-creds">
+      <p>Demo accounts — tap to fill</p>
+      <div class="cred" data-u="admin" data-p="admin123"><span class="cu">admin / admin123</span><span class="cr">Admin · full access</span></div>
+      <div class="cred" data-u="supervisor" data-p="super123"><span class="cu">supervisor / super123</span><span class="cr">Supervisor · no permissions tab</span></div>
+    </div>
+    <div class="login-foot">Concept build by <b>BrainADZ Live</b> · simulated data, real logic</div>
+  </div>
+</div>
+
+<!-- ═══════════ APP ═══════════ -->
+<div class="shell" id="appView">
+  <aside class="sidebar" id="sidebar">
+    <div class="sb-logo">
+      <div class="lmark">✚</div>
+      <div><div class="lname">MedTrack <span>OS</span></div><div class="lsub">Dwarka General</div></div>
+    </div>
+    <nav class="nav">
+      <div class="nav-label">Monitor</div>
+      <button class="nav-item on" data-view="map"><span class="ni">🗺</span>Live Map</button>
+      <button class="nav-item" data-view="employees"><span class="ni">👥</span>Employees</button>
+      <button class="nav-item" data-view="time"><span class="ni">⏱</span>Time on Site</button>
+      <button class="nav-item" data-view="reports"><span class="ni">📊</span>Reports</button>
+      <div class="nav-label">Respond</div>
+      <button class="nav-item" data-view="alerts"><span class="ni">📟</span>SOS &amp; Alerts<span class="pip" id="alertPip"></span></button>
+      <button class="nav-item" data-view="logbook"><span class="ni">📒</span>Logbook<span class="pip" id="logPip"></span></button>
+      <div class="nav-label">Admin</div>
+      <button class="nav-item" data-view="permissions" id="navPerm"><span class="ni">🔐</span>Permissions</button>
+    </nav>
+    <div class="sb-user">
+      <div class="av" id="userAv">—</div>
+      <div><div class="un" id="userName">—</div><div class="ur" id="userRole">—</div></div>
+      <button class="out" id="btnLogout" title="Sign out">⎋</button>
+    </div>
+    <div class="brand-foot">Concept build · <b>BrainADZ Live</b> software vertical</div>
+  </aside>
+
+  <div class="content">
+    <header class="apphead">
+      <button class="burger" id="burger">☰</button>
+      <div><div class="page-title" id="pageTitle">Live Map</div><div class="page-sub" id="pageSub"></div></div>
+      <div class="kchips">
+        <div class="kchip ok"><b id="kOnDuty">0</b> on duty</div>
+        <div class="kchip"><b id="kDocs">0</b> doctors</div>
+        <div class="kchip alert"><b id="kAlerts">0</b> alerts</div>
+        <div class="kchip"><b id="kAck">—</b> avg ACK</div>
+      </div>
+      <div class="clockbox"><b id="clockTime">--:--:--</b><br><span id="clockDate"></span></div>
+    </header>
+
+    <main>
+      <!-- LIVE MAP -->
+      <section class="view on" data-pane="map">
+        <div class="map-tools">
+          <div class="floor-tabs" id="floorTabs"></div>
+          <div class="legend" id="legend"></div>
+          <div class="spacer"></div>
+          <button class="btn ghost-danger" id="btnDrill">⚡ Drill: Code Blue, ICU</button>
+          <button class="btn" id="btnSos">Someone hits SOS</button>
+          <button class="btn" id="btnAssets">🦽 Assets: off</button>
+        </div>
+        <div class="map-frame" id="map">
+          <div class="sweep" id="sweep"></div>
+          <div class="spop" id="spop"></div>
+          <div class="shiftnote" id="shiftNote" title="Shift note — tap to take it down">OT-2 fumigation till 6pm — route trolleys via Ward B corridor, not the lift lobby.<b>— Asha, shift supervisor</b></div>
+        </div>
+      </section>
+
+      <!-- EMPLOYEES -->
+      <section class="view" data-pane="employees">
+        <div class="card">
+          <div class="card-h">
+            <h3>Who's on the floor</h3><span class="sub" id="empCount"></span>
+            <div class="spacer"></div>
+            <input class="search-wide" id="empSearch" placeholder="Find someone — name, ward, role…">
+          </div>
+          <div class="card-b filter-pad"><div class="filters" id="roleFilters"></div></div>
+          <div class="tbl-wrap"><table class="tbl" id="empTable"></table></div>
+        </div>
+      </section>
+
+      <!-- TIME ON SITE -->
+      <section class="view" data-pane="time">
+        <div class="card">
+          <div class="card-h"><h3>Time on site — today</h3><span class="sub">On-site clock runs live for everyone on duty · badge in/out simulated</span></div>
+          <div class="tbl-wrap"><table class="tbl" id="timeTable"></table></div>
+        </div>
+      </section>
+
+      <!-- SOS & ALERTS -->
+      <section class="view" data-pane="alerts">
+        <div class="grid2">
+          <div>
+            <div class="card stack-gap">
+              <div class="card-h"><h3>Send a page</h3><span class="sub">one doctor, a team, or the whole floor</span></div>
+              <div class="card-b">
+                <div class="codes">
+                  <button class="code-btn" data-code="blue">CODE BLUE</button>
+                  <button class="code-btn" data-code="red">CODE RED</button>
+                  <button class="code-btn" data-code="pink">CODE PINK</button>
+                  <button class="code-btn on" data-code="custom">CUSTOM</button>
+                </div>
+                <textarea id="msgText" placeholder='Write the page… e.g. "Dr. Mehra to ICU bed 4, now please"'></textarea>
+                <div class="quick-chips">
+                  <button class="qchip" data-q="doctors">+ All doctors</button>
+                  <button class="qchip" data-q="nurses">+ All nurses</button>
+                  <button class="qchip" data-q="onduty">+ Everyone on duty</button>
+                  <button class="qchip" data-q="clear">✕ Clear</button>
+                </div>
+                <div class="composer-foot">
+                  <span class="sel-count"><b id="selCount">0</b> selected</span>
+                  <button class="btn primary" id="btnSend">Page them →</button>
+                </div>
+              </div>
+            </div>
+            <div class="card">
+              <div class="card-h"><h3>Who should get it?</h3></div>
+              <div class="card-b recip-scroll" id="recipList"></div>
+            </div>
+          </div>
+          <div>
+            <div class="card stack-gap">
+              <div class="card-h"><h3>Active alerts</h3><span class="sub" id="alertCountSub"></span></div>
+              <div class="card-b" id="alertList"></div>
+            </div>
+            <div class="card">
+              <div class="card-h"><h3>Sent pages</h3><span class="sub">live delivery &amp; acknowledgments</span></div>
+              <div class="card-b" id="bcLog"></div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- LOGBOOK -->
+      <section class="view" data-pane="logbook">
+        <div class="card">
+          <div class="card-h"><h3>Logbook</h3><span class="sub">running continuously — every room change with time spent</span>
+            <div class="spacer"></div>
+            <input class="search-narrow" id="logSearch" placeholder="Filter by name…"></div>
+          <div class="card-b filter-pad-tight"><div class="filters" id="logFilters"></div></div>
+          <div class="card-b feed" id="feed"></div>
+        </div>
+      </section>
+
+      <!-- PERMISSIONS -->
+      <section class="view" data-pane="permissions">
+        <div class="grid2">
+          <div class="card">
+            <div class="card-h"><h3>Restricted zones</h3><span class="sub">toggle which roles may enter — geofencing applies instantly</span></div>
+            <div class="card-b" id="zonePerms"></div>
+          </div>
+          <div class="card">
+            <div class="card-h"><h3>System users</h3><span class="sub">who can sign in to this panel</span></div>
+            <div class="card-b" id="userList"></div>
+          </div>
+        </div>
+      </section>
+      <!-- REPORTS -->
+      <section class="view" data-pane="reports">
+        <div class="grid2">
+          <div class="card">
+            <div class="card-h"><h3>Busiest rooms today</h3><span class="sub">staff-time per zone, measured from live movement</span></div>
+            <div class="card-b" id="repZones"></div>
+          </div>
+          <div>
+            <div class="card stack-gap">
+              <div class="card-h"><h3>Shift at a glance</h3></div>
+              <div class="card-b" id="repStats"></div>
+            </div>
+            <div class="card">
+              <div class="card-h"><h3>Asset register</h3><span class="sub">tagged equipment · toggle the layer on the map</span></div>
+              <div class="tbl-wrap"><table class="tbl" id="assetTable"></table></div>
+            </div>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+</div>
+<div class="modal" id="histModal">
+  <div class="modal-card">
+    <div class="card-h"><h3 id="histTitle"></h3><div class="spacer"></div><button class="btn sm" id="histClose">✕ Close</button></div>
+    <div class="modal-body" id="histBody"></div>
+  </div>
+</div>
+<div class="scrim" id="scrim"></div>
+<div class="toasts" id="toasts"></div>
+<script src="script.js"></script>
+</body>
+</html>
